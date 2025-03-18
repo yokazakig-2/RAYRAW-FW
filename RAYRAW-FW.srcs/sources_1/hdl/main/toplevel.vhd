@@ -185,6 +185,9 @@ architecture Behavioral of toplevel is
   signal asic_adc_dco             :  std_logic_vector(ADC_DCLK_P'range);
 
   signal asic_discri_input        :  std_logic_vector(ASIC_DISCRI'range);
+  signal dummy_discri_input       :  std_logic_vector(ASIC_DISCRI'range);
+  signal dummy_pattern            :  std_logic_vector(7 downto 0) := "01000010";
+  signal dummy_counter            :  std_logic_vector(3 downto 0);
 
   signal dummy_signal             : std_logic;
 
@@ -432,6 +435,59 @@ architecture Behavioral of toplevel is
      );
   end component;
 
+  component VIO_BUSY
+    port
+     (-- Clock in ports
+      -- Clock out ports
+      clk               : in    std_logic;
+      probe_in0         : in    std_logic;
+      probe_in1         : in    std_logic
+     );
+  end component;
+  
+  component ILA_DISCRI
+    port
+     (
+      clk               : in    std_logic;
+      probe0            : in    std_logic;
+      probe1            : in    std_logic;
+      probe2            : in    std_logic;
+      probe3            : in    std_logic;
+      probe4            : in    std_logic;
+      probe5            : in    std_logic;
+      probe6            : in    std_logic;
+      probe7            : in    std_logic;
+      probe8            : in    std_logic;
+      probe9            : in    std_logic;
+      probe10            : in    std_logic;
+      probe11            : in    std_logic;
+      probe12            : in    std_logic;
+      probe13            : in    std_logic;
+      probe14            : in    std_logic;
+      probe15            : in    std_logic;
+      probe16            : in    std_logic;
+      probe17            : in    std_logic;
+      probe18            : in    std_logic;
+      probe19            : in    std_logic;
+      probe20            : in    std_logic;
+      probe21            : in    std_logic;
+      probe22            : in    std_logic;
+      probe23            : in    std_logic;
+      probe24            : in    std_logic;
+      probe25            : in    std_logic;
+      probe26            : in    std_logic;
+      probe27            : in    std_logic;
+      probe28            : in    std_logic;
+      probe29            : in    std_logic;
+      probe30            : in    std_logic;
+      probe31            : in    std_logic;
+      probe32            : in    std_logic;
+      probe33            : in    std_logic_vector(3 downto 0);
+      probe34            : in    std_logic
+     );
+  end component;
+
+
   -- debug -----------------------------------------------------------------------------
   --attribute mark_debug of clk_150MHz : signal is "true";
 
@@ -552,6 +608,25 @@ begin
   --sig_in_tdc(0)(0)             <= NIM_IN(2);
   --sig_in_tdc(0)(31 downto 1)   <= ASIC_DISCRI(31 downto 1);
   sig_in_tdc(0)   <= ASIC_DISCRI;
+  --sig_in_tdc(0)   <= dummy_discri_input;
+  u_dummy : process(user_reset, clk_sys)
+  begin
+    if(user_reset = '1') then
+      dummy_counter   <= (others => '0');
+    elsif(clk_sys'event AND clk_sys = '1') then
+      dummy_counter   <= std_logic_vector(unsigned(dummy_counter) +1);
+    end if;
+  end process;
+
+  process(dummy_counter)
+  begin
+        if(unsigned(dummy_counter) > 7) then
+            dummy_discri_input(31 downto 0) <= "11111111111111111111111111111111";
+        else
+            dummy_discri_input(31 downto 0) <= "00000000000000000000000000000000";
+        end if;
+  end process;
+  
 
   data_bbus(kBbTDCL0.ID) <= data_tdc_bbus(0);
   data_bbus(kBbTDCT0.ID) <= data_tdc_bbus(1);
@@ -1133,6 +1208,55 @@ begin
       clk10kHz    => clk_10kHz,
       clk1kHz     => clk_1kHz
       );
+
+    u_VIO_BUSY :  VIO_BUSY
+    port map
+    (
+        clk         =>  clk_sys,
+        probe_in0   =>  adc_busy,
+        probe_in1   =>  tdc_busy
+    );
+    
+    u_ILA_DISCRI : ILA_DISCRI
+    port map
+    (
+        clk         => clk_sys,
+        probe0      => ASIC_DISCRI(0),
+        probe1      => ASIC_DISCRI(1),
+        probe2      => ASIC_DISCRI(2),
+        probe3      => ASIC_DISCRI(3),
+        probe4      => ASIC_DISCRI(4),
+        probe5      => ASIC_DISCRI(5),
+        probe6      => ASIC_DISCRI(6),
+        probe7      => ASIC_DISCRI(7),
+        probe8      => ASIC_DISCRI(8),
+        probe9      => ASIC_DISCRI(9),
+        probe10      => ASIC_DISCRI(10),
+        probe11      => ASIC_DISCRI(11),
+        probe12      => ASIC_DISCRI(12),
+        probe13      => ASIC_DISCRI(13),
+        probe14      => ASIC_DISCRI(14),
+        probe15      => ASIC_DISCRI(15),
+        probe16      => ASIC_DISCRI(16),
+        probe17      => ASIC_DISCRI(17),
+        probe18      => ASIC_DISCRI(18),
+        probe19      => ASIC_DISCRI(19),
+        probe20      => ASIC_DISCRI(20),
+        probe21      => ASIC_DISCRI(21),
+        probe22      => ASIC_DISCRI(22),
+        probe23      => ASIC_DISCRI(23),
+        probe24      => ASIC_DISCRI(24),
+        probe25      => ASIC_DISCRI(25),
+        probe26      => ASIC_DISCRI(26),
+        probe27      => ASIC_DISCRI(27),
+        probe28      => ASIC_DISCRI(28),
+        probe29      => ASIC_DISCRI(29),
+        probe30      => ASIC_DISCRI(30),
+        probe31      => ASIC_DISCRI(31),
+        probe32      => or_reduce(ASIC_DISCRI),
+        probe33      => dummy_counter,
+        probe34      => dummy_discri_input(0)
+    );
 
   -- CDCE clocks --
   -- pll_is_locked   <= (mmcm_cdcm_locked or CDCE_LOCK) and clk_sys_locked;

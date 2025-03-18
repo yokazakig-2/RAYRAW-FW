@@ -87,6 +87,9 @@ architecture RTL of AdcBlock is
   -- signal clk_adc          : std_logic_vector(kNumASIC-1 downto 0);
   -- signal gclk_adc         : std_logic_vector(kNumASIC-1 downto 0);
   signal adc_data           : AdcDataBlockArray; -- 32 * 10
+  signal adc_enable         : std_logic_vector(kNumAdcInputBlock-1 downto 0) := "01100110011001100110011000000000"; --enable ch #30,29,26,25,22,21,18,17,14,13,10,9
+  signal adc_ch_buf       : std_logic_vector(kWidthAdcChannel-1 downto 0); -- 5 bit
+
 
   COMPONENT vio_adc
   PORT (
@@ -429,6 +432,7 @@ begin
   gen_chfifo : for i in 0 to kNumAdcInputBlock-1 generate
     din_chfifo(i)   <= bufd_ring2chfifo(i);
     we_chfifo(i)    <= bufwe_ring2chfifo(i);
+    --we_chfifo(i)    <= '0';
     read_valid(i)   <= dout_chfifo(i)(kIndexAdcDataBit) AND rv_raw_chfifo(i);
 
     u_chfifo : channel_buffer_adc
@@ -592,9 +596,10 @@ begin
       id      := to_integer(unsigned(local_index));
 
       din_block_buffer_buf  <= magicWord & adc_ch & "00" & dout_chfifo(id)(kIndexAdcDataBit-1 downto 0);
+      adc_ch_buf            <= adc_ch;
       din_block_buffer      <= din_block_buffer_buf;
       we_block_buffer_buf   <= we_ok_to_blbuffer AND read_valid(id);
-      we_block_buffer       <= we_block_buffer_buf;
+      we_block_buffer       <= we_block_buffer_buf AND adc_enable(to_integer(unsigned(adc_ch_buf)));
 
       case state_build is
         when Init =>
